@@ -145,7 +145,7 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
     }
 
     //Render to screen
-    SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
+    SDL_RenderCopyEx( gRenderer, mTexture, 0, &renderQuad, angle, center, flip );
 }
 
 int LTexture::getWidth()

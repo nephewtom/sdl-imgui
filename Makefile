@@ -21,7 +21,7 @@ OBJDIR=./obj
 OBJS=$(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 IMGUI_OBJS=$(addprefix $(OBJDIR)/, $(IMGUI_SRCS:.cpp=.o))
 
-EXE = sdl-imgui
+EXE = bin/sdl-imgui
 
 LIBS = -lGLEW -lGL -ldl `sdl2-config --libs` -lSDL2_image
 
@@ -32,6 +32,7 @@ $(EXE): $(OBJDIR) $(IMGUI_OBJS) $(OBJS)
 	$(CXX) -o $(EXE) $(OBJS) $(IMGUI_OBJS) $(LIBS)
 
 $(OBJDIR):
+	mkdir -p bin/
 	mkdir -p $(OBJDIR)
 	mkdir -p $(OBJDIR)/imgui
 
@@ -39,4 +40,4 @@ $(OBJDIR)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJDIR) *~ $(EXE)
+	rm -rf $(OBJDIR)/*.o *~ $(EXE)

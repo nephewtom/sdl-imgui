@@ -81,17 +81,14 @@ bool checkCollision( Circle& a, SDL_Rect& b )
     return false;
 }
 
-int Dot::DOT_WIDTH = 20;
-int Dot::DOT_HEIGHT = 20;
-
-Dot::Dot(int x, int y )
+Dot::Dot(int x, int y, int w, int h) : vel(4), width(w), height(h)
 {
     //Initialize the offsets
     mPosX = x;
     mPosY = y;
 
     //Set collision circle size
-    mCollider.r = DOT_WIDTH / 2;
+    collider.r = width / 2;
 
     //Initialize the velocity
     mVelX = 0;
@@ -109,10 +106,10 @@ void Dot::handleEvent( SDL_Event& e )
         //Adjust the velocity
         switch( e.key.keysym.sym )
         {
-        case SDLK_UP: mVelY -= DOT_VEL; break;
-        case SDLK_DOWN: mVelY += DOT_VEL; break;
-        case SDLK_LEFT: mVelX -= DOT_VEL; break;
-        case SDLK_RIGHT: mVelX += DOT_VEL; break;
+        case SDLK_w: mVelY -= vel; break;
+        case SDLK_s: mVelY += vel; break;
+        case SDLK_a: mVelX -= vel; break;
+        case SDLK_d: mVelX += vel; break;
         }
     }
     //If a key was released
@@ -121,10 +118,10 @@ void Dot::handleEvent( SDL_Event& e )
         //Adjust the velocity
         switch( e.key.keysym.sym )
         {
-        case SDLK_UP: mVelY += DOT_VEL; break;
-        case SDLK_DOWN: mVelY -= DOT_VEL; break;
-        case SDLK_LEFT: mVelX += DOT_VEL; break;
-        case SDLK_RIGHT: mVelX -= DOT_VEL; break;
+        case SDLK_w: mVelY += vel; break;
+        case SDLK_s: mVelY -= vel; break;
+        case SDLK_a: mVelX += vel; break;
+        case SDLK_d: mVelX -= vel; break;
         }
     }
 }
@@ -135,9 +132,11 @@ void Dot::move( SDL_Rect& square, Circle& circle )
     mPosX += mVelX;
     shiftColliders();
 
-    //If the dot collided or went too far to the left or right
-    if( ( mPosX - mCollider.r < 0 ) || ( mPosX + mCollider.r > SCREEN_WIDTH ) || checkCollision( mCollider, square ) || checkCollision( mCollider, circle ) )
-    {
+    if ( mPosX + collider.r > SCREEN_WIDTH ) {
+        mPosX = SCREEN_WIDTH - collider.r;
+        shiftColliders();        
+    }
+    if( ( mPosX - collider.r < 0 ) || checkCollision( collider, square ) || checkCollision( collider, circle ) ) {
         //Move back
         mPosX -= mVelX;
         shiftColliders();
@@ -146,10 +145,13 @@ void Dot::move( SDL_Rect& square, Circle& circle )
     //Move the dot up or down
     mPosY += mVelY;
     shiftColliders();
-
+    if ( mPosY + collider.r > SCREEN_HEIGHT ) {
+        mPosY = SCREEN_HEIGHT - collider.r;
+        shiftColliders();
+    }
+    
     //If the dot collided or went too far up or down
-    if( ( mPosY - mCollider.r < 0 ) || ( mPosY + mCollider.r > SCREEN_HEIGHT ) || checkCollision( mCollider, square ) || checkCollision( mCollider, circle ) )
-    {
+    if( ( mPosY - collider.r < 0 ) || checkCollision( collider, square ) || checkCollision( collider, circle ) ) {
         //Move back
         mPosY -= mVelY;
         shiftColliders();
@@ -159,17 +161,12 @@ void Dot::move( SDL_Rect& square, Circle& circle )
 void Dot::render(LTexture& texture, SDL_Rect& clip)
 {
     //Show the dot
-    texture.render( mPosX - mCollider.r, mPosY - mCollider.r, &clip);
-}
-
-Circle& Dot::getCollider()
-{
-    return mCollider;
+    texture.render( mPosX - collider.r, mPosY - collider.r, &clip);
 }
 
 void Dot::shiftColliders()
 {
     //Align collider to center of dot
-    mCollider.x = mPosX;
-    mCollider.y = mPosY;
+    collider.x = mPosX;
+    collider.y = mPosY;
 }

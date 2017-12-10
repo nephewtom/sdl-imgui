@@ -39,7 +39,7 @@ SDL_Window* createWindow() {
     SDL_GetCurrentDisplayMode(0, &current);
     SDL_Window *window = SDL_CreateWindow("SDL2+ImGui",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);    
+                                          SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);    
     if (window == 0) {
         exit(-1);
     }
@@ -63,7 +63,7 @@ SDL_Renderer* createRenderer(SDL_Window* window)
 
 void loadMedia(LTexture& texture)
 {
-    if( !texture.loadFromFile( "./dot.bmp" ) ) {
+    if( !texture.loadFromFile( "./res/dot.bmp" ) ) {
         printf( "Failed to load dot texture!\n" );
         exit(-1);
     }
@@ -89,8 +89,9 @@ int main(int, char**)
     LTexture gDotTexture;    
     loadMedia(gDotTexture);
 
-    Dot dot( Dot::DOT_WIDTH / 2, Dot::DOT_HEIGHT / 2 );
-    Dot otherDot( SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4 );
+    int dw = 20; int dh = 20;
+    Dot dot(10, 10, dw, dh);
+    Dot otherDot(10, 100, dw, dw);
 
     SDL_Rect wall;
     wall.x = 300;
@@ -101,11 +102,12 @@ int main(int, char**)
     SDL_Rect clip;
     clip.x = 0;
     clip.y = 0;
-    clip.w = 20;
-    clip.h = 20;
+    clip.w = dw;
+    clip.h = dh;
     
     ImVec2 initSize = ImVec2(400, 400);
     bool done = false;
+    bool imgui = true;
     while (!done)
     {
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -120,16 +122,15 @@ int main(int, char**)
                 done = true;
 
             
-            if( event.type == SDL_KEYDOWN && event.key.repeat == 0 && event.key.keysym.sym == SDLK_ESCAPE) {
-                done = true;
-            }
+            if( event.type == SDL_KEYDOWN && event.key.repeat == 0 && event.key.keysym.sym == SDLK_ESCAPE) done = true;
+            if( event.type == SDL_KEYDOWN && event.key.repeat == 0 && event.key.keysym.sym == SDLK_i) imgui = !imgui;
             
             dot.handleEvent( event );
         }
 
-        //Update screen        
+        // ImGui stuff
         ImGui_ImplSdlGL2_NewFrame(window);
-
+        if (imgui)
         {
             ImGui::Begin("Parameters", &parameters_window);
             ImGui::SetWindowSize("Parameters", initSize);
@@ -145,10 +146,11 @@ int main(int, char**)
             }
             if (ImGui::CollapsingHeader("Dot", "", true, true))
             {
-                ImGui::SliderInt("mx", &dot.mPosX, 10, 1000);
-                ImGui::SliderInt("my", &dot.mPosY, 10, 700);
-                ImGui::SliderInt("int", &dot.DOT_WIDTH, 1, 30);
-                ImGui::Text("DOT_WIDTH:%d", Dot::DOT_WIDTH);
+                ImGui::SliderInt("dx", &dot.mPosX, 10, 1000);
+                ImGui::SliderInt("dy", &dot.mPosY, 10, 700);
+                ImGui::Text("collider.x: %d", dot.collider.x);
+                ImGui::Text("collider.y: %d", dot.collider.y);
+                ImGui::SliderInt("Velocity", &dot.vel, 1, 32);
             }
             if (ImGui::CollapsingHeader("Help", "", true, true)) {
                 ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -156,17 +158,17 @@ int main(int, char**)
                 if (ImGui::Button("Samples Window")) show_test_window ^= 1;
             }
             ImGui::End();
+
+            // Most of the sample code is in ImGui::ShowTestWindow().
+            if (show_test_window) {
+                ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
+                ImGui::ShowTestWindow(&show_test_window);
+            }
         }
 
-        // Most of the sample code is in ImGui::ShowTestWindow().
-        if (show_test_window)
-        {
-            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-            ImGui::ShowTestWindow(&show_test_window);
-        }
 
         //Move the dot and check collision
-        dot.move( wall, otherDot.getCollider() );
+        dot.move( wall, otherDot.collider );
 
         //Clear screen
         SDL_SetRenderDrawColor (gRenderer, background_color.x * 255.0f, background_color.y * 255.0f, background_color.z * 255.0f, background_color.w * 255.0f);
@@ -180,7 +182,8 @@ int main(int, char**)
         dot.render(gDotTexture, clip);
         otherDot.render(gDotTexture, clip);
 
-        
+
+        // Last calls before end of mainLoop
         glUseProgram(0);
         ImGui::Render();
         SDL_RenderPresent( gRenderer );
@@ -190,9 +193,6 @@ int main(int, char**)
     gDotTexture.free();
     SDL_DestroyRenderer( gRenderer );
     SDL_DestroyWindow( window );
-    window = NULL;
-    gRenderer = NULL;
-
     ImGui_ImplSdlGL2_Shutdown();
     IMG_Quit();
     SDL_Quit();
